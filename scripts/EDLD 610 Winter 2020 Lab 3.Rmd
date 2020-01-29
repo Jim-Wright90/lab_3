@@ -221,3 +221,154 @@ ggplot(percentages, aes(sex)) +
   labs(title = "Comic Book Character Gender",
        y = "Percent")
 ```
+
+Hi Jim,
+Love your ideas! Great work! I learned a lot from your code.
+Here's something I did today.Hopefully I'll have time to do more over the weekend.
+Claie
+
+1. Start with the google trends data.
+
+Visualize the change in trends for each hurricane over time in one plot with three scales. Map color to a discrete scale.
+
+Visualize the trends again, this time with solid shapes (if your first plot was already solid shapes, use lines). Hint, geom_area can be difficult to work with if you have a grouping factor. Try geom_ribbon instead.
+
+Visualize the same relation, but change the scales so color is mapped to a continuous scale.
+
+Visualize the change in trends for each hurricane over time in one plot with three scales. Map color to a discrete scale.
+
+```{r}
+a <- google_trends %>%
+  pivot_longer(2:4,
+               names_to = "hurricane",
+               values_to = "trends")
+
+ggplot(a, aes(date,trends))+
+  geom_line(aes(color = hurricane))
+
+ggplot(a, aes(date, trends))+
+  geom_ribbon(aes(fill = hurricane, ymin = 0, ymax = trends),
+              alpha = 0.9,
+              color = "grey70")
+
+ggplot(a, aes(date, hurricane)) +
+  geom_tile(aes(fill = trends),
+            color = "gray70") +
+  scale_fill_viridis_c(option = "magma") +
+  coord_fixed()+
+  coord_flip()+
+  theme(legend.position = "right",
+        legend.direction = "vertical",
+        legend.key.height = unit(.5,"cm"))
+```
+
+Create a data frame that includes the dates that each hurricane made landfall.
+
+Annotate one of your first two plots to include these reference points with vertical lines. You do not have to include text annotations - just the vertical lines. But if you would like to try, look into geom_text or geom_label. The hurricanes made landfall on (approximately) the following days:
+  
+  Harvey: August 25, 2017
+Irma: September 10, 2017
+Jose: Did not make landfall
+Maria: September 20, 2017
+
+Make any final modifications to the plot you’d like to communicate the information as effectively as possible.
+
+```{r}
+landfall <- tibble(date = lubridate::mdy(c("August 25, 2017", 
+                                           "September 10, 2017", 
+                                           "September 20, 2017")),
+                   hurricane = c("Harvey Landfall", 
+                                 "Irma Landfall", 
+                                 "Maria Landfall"))
+
+ggplot(a, aes(date, trends))+
+  geom_ribbon(aes(fill = hurricane, ymin = 0, ymax = trends),
+              alpha = 0.9,
+              color = "grey30")+
+  geom_vline(aes(xintercept = date), landfall,
+             color = "#fb6107", 
+             lty = "dashed") +
+  geom_text(aes(x = date, y = 80, label = hurricane), landfall,
+            color = "grey40",
+            nudge_x = 2,
+            size = 3,
+            angle = 45)+
+  labs(x = "Date", 
+       y = "Google Trends",
+       title = "Hurricane Google trends over time")
+
+```
+
+2. Replicate the “National cable news networks” plot from the story using the tv_states data. Don’t worry about all the labels. Try to match the colors but don’t worry about getting them exact.
+
+```{r}
+t <- tv_states %>% 
+  gather(state, percentage, -date) %>% 
+  mutate(state = factor(state, levels = c("florida", "texas", "puerto_rico"))) 
+
+ggplot(b, aes(date, percentage)) +
+  geom_ribbon(aes(fill = state, ymin = 0, ymax = percentage), color = "grey70")+
+  geom_vline(aes(xintercept = date), landfall,
+             color = "#fb6107", 
+             lty = "dashed")+
+  geom_text(aes(x = date, y = 3.2, label = hurricane), landfall,
+            color = "grey40",
+            nudge_x = 2,
+            size = 3,
+            angle = 45)
+
+```
+
+3. Use the comic_characters dataset to visualize the proportion of different genders using at least three different methods. .
+
+```{r}
+# Note that the {fivethirtyeight} package only includes a preview (10 rows) of the data. Run the following code to get access to the full dataset.
+# Get DC characters:
+comic_characters_dc <- 
+  "https://github.com/fivethirtyeight/data/raw/master/comic-characters/dc-wikia-data.csv" %>% 
+  read_csv() %>% 
+  clean_names() %>% 
+  mutate(publisher = "DC")
+
+# Get Marvel characters:
+comic_characters_marvel <- 
+  "https://github.com/fivethirtyeight/data/raw/master/comic-characters/marvel-wikia-data.csv" %>% 
+  read_csv() %>% 
+  clean_names() %>% 
+  mutate(publisher = "Marvel")
+
+# Merge two dataset and perform further data wrangling:
+comic_characters <-
+  comic_characters_dc %>% 
+  bind_rows(comic_characters_marvel) %>% 
+  separate(first_appearance, c("year2", "month"), ", ", remove = FALSE) %>%
+  mutate(
+    # If month was missing, set as January and day as 01:
+    month = ifelse(is.na(month), "01", month),
+    day = "01",
+    # Note some years missing:
+    date = ymd(paste(year, month, day, sep = "-")),
+    align = factor(
+      align, 
+      levels = c("Bad Characters", "Reformed Criminals", "Netural Characters", "Good Characters"),
+      ordered = TRUE)) %>%
+  select(publisher, everything(), -c(year2, day))
+```
+
+
+With your final visualization, make any additional modifications you think would help reduce the cognitive load necessary to comprehend the figure
+
+```{r}
+percents <- comic_characters %>% 
+  count(sex) %>% 
+  mutate(percent = n/sum(n)*100)
+
+c <- na.omit(left_join(comic_characters, percents))
+
+ggplot(c, aes(x = fct_reorder(sex, n), y = percent,)) +
+  geom_col(aes(fill = fct_reorder(sex, n)), position = "dodge") +
+  labs(x = "Gender",
+       y = "Percentage")+
+  theme_minimal()+
+  coord_flip()
+```
