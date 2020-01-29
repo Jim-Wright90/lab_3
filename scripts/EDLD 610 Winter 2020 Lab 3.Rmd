@@ -1,0 +1,25 @@
+---
+title: "EDLD 610 Winter 2020 Lab 3"
+author: "Jim Wright and Claire Zhang"
+date: "1/29/2020"
+output: html_document
+toc: true
+toc_float: true 
+theme: united 
+highlight: zenburn 
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(message = FALSE,
+                      warning = FALSE,
+                      echo = FALSE,
+                      dev.args = list(bg="transparent"))
+
+library(tidyverse)
+library(rio)
+library(here)
+
+install.packages("fivethirtyeight")
+library(fivethirtyeight)
+```
+
